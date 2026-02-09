@@ -23,6 +23,7 @@ int main(void)
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "Doogo - A Dog's Life");
+    InitAudioDevice();
 
     // Disable the default ESC key behavior so we can use it for Pause
     SetExitKey(KEY_NULL);
@@ -51,7 +52,10 @@ int main(void)
     
     Bone bones[MAX_BONES] = { 0 };
     Tree trees[MAX_TREES] = { 0 };
-    InitWorld(bones, trees);
+    Meat meats[MAX_MEATS] = { 0 };
+    InitWorld(bones, trees, meats);
+
+    Sound barkSound = LoadSound("/asset/audio/bark.mp3");
 
     SetTargetFPS(60); // Set our game to run at 60 frames-per-second
     
@@ -80,7 +84,6 @@ int main(void)
 
                 // --- Menu Logic ---
                 int sw = GetScreenWidth();
-                int sh = GetScreenHeight();
                 Vector2 mousePos = GetMousePosition();
 
                 // Define Buttons
@@ -101,7 +104,7 @@ int main(void)
                 if (IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                     if (menuSelection == 0) {
                         InitDog(&doogo);
-                        InitWorld(bones, trees);
+                        InitWorld(bones, trees, meats);
                         cameraAngleX = 0.0f;
                         cameraAngleY = 0.4f;
                         DisableCursor();
@@ -147,29 +150,16 @@ int main(void)
                 UpdateDog(&doogo, deltaTime, cameraAngleX);
                 
                 // Update World and check collisions
-                UpdateWorld(bones, trees, doogo.position);
-                
-                // Manual score check (since we separated logic)
-                for (int i = 0; i < MAX_BONES; i++) {
-                    if (!bones[i].active) {
-                        // Check if we just collected it (distance check again or flag)
-                        // For this simple version, we just count inactive bones that are close?
-                        // Better: Check collision here properly or pass score pointer.
-                        // Let's do a simple distance check for score increment:
-                        float dx = doogo.position.x - bones[i].position.x;
-                        if (dx > -1.0f && dx < 1.0f && !bones[i].active) {
-                             // This logic is a bit flawed for a real game but works for visual demo.
-                             // Ideally, UpdateWorld returns score points.
-                             // Let's just increment score in UpdateWorld logic next time.
-                             // For now, we will just display the dog's internal score if we moved logic there.
-                        }
-                    }
+                int previousScore = doogo.score;
+                UpdateWorld(bones, trees, meats, doogo.position, &doogo.score, &doogo.health, doogo.maxHealth);
+
+                if (doogo.score / 5 > previousScore / 5) {
+                    PlaySound(barkSound);
                 }
             } break;
             case SCREEN_PAUSE:
             {
                 int sw = GetScreenWidth();
-                int sh = GetScreenHeight();
                 Vector2 mousePos = GetMousePosition();
 
                 Rectangle btnResume = { sw/2 - 100, 180, 200, 40 };
@@ -199,7 +189,6 @@ int main(void)
             case SCREEN_SETTINGS:
             {
                 int sw = GetScreenWidth();
-                int sh = GetScreenHeight();
                 Vector2 mousePos = GetMousePosition();
 
                 Rectangle btnFull = { sw/2 - 120, 200, 240, 40 };
@@ -246,7 +235,7 @@ int main(void)
                     // Draw 3D Background
                     DrawRectangle(0, 0, sw, sh, SKYBLUE); // Sky
                     BeginMode3D(camera);
-                        DrawWorld3D(bones, trees);
+                        DrawWorld3D(bones, trees, meats);
                         DrawDog3D(doogo);
                     EndMode3D();
 
@@ -291,7 +280,7 @@ int main(void)
                 case SCREEN_GAMEPLAY:
                 {
                     BeginMode3D(camera);
-                        DrawWorld3D(bones, trees);
+                        DrawWorld3D(bones, trees, meats);
                         DrawDog3D(doogo);
                         // Draw a huge sky plane or just rely on ClearBackground
                         // (Sky is handled by ClearBackground(RAYWHITE) -> changed to SKYBLUE below)
@@ -303,12 +292,22 @@ int main(void)
                     char scoreText[20];
                     sprintf(scoreText, "Bones: %d", doogo.score);
                     DrawText(scoreText, 20, 20, 20, BLACK);
+
+                    // Draw Health Bar
+                    DrawRectangle(20, 50, 200, 20, GRAY);
+                    DrawRectangle(20, 50, (int)(200 * (doogo.health / doogo.maxHealth)), 20, RED);
+                    DrawText("Health", 25, 52, 10, WHITE);
+
+                    // Draw Stamina Bar
+                    DrawRectangle(20, 80, 200, 20, GRAY);
+                    DrawRectangle(20, 80, (int)(200 * (doogo.stamina / doogo.maxStamina)), 20, GREEN);
+                    DrawText("Stamina", 25, 82, 10, WHITE);
                 } break;
                 case SCREEN_PAUSE:
                 {
                     // Draw the game behind the menu (frozen)
                     BeginMode3D(camera);
-                        DrawWorld3D(bones, trees);
+                        DrawWorld3D(bones, trees, meats);
                         DrawDog3D(doogo);
                     EndMode3D();
 
@@ -365,6 +364,8 @@ int main(void)
     // --------------------------------------------------------------------------------------
     // De-Initialization
     // --------------------------------------------------------------------------------------
+    UnloadSound(barkSound);
+    CloseAudioDevice();
     CloseWindow();        // Close window and OpenGL context
     // --------------------------------------------------------------------------------------
 

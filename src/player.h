@@ -11,6 +11,10 @@ typedef struct Dog {
     float rotation;
     int score;
     Color color;
+    float stamina;
+    float maxStamina;
+    float health;
+    float maxHealth;
 } Dog;
 
 void InitDog(Dog* dog);

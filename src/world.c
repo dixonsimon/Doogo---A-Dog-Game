@@ -2,7 +2,7 @@
 #include "raymath.h"
 #include <math.h>
 
-void InitWorld(Bone* bones, Tree* trees) {
+void InitWorld(Bone* bones, Tree* trees, Meat* meats) {
     // Initialize Trees scattered around
     for (int i = 0; i < MAX_TREES; i++) {
         trees[i].position = (Vector3){ 
@@ -21,9 +21,19 @@ void InitWorld(Bone* bones, Tree* trees) {
         };
         bones[i].active = true;
     }
+
+    // Initialize Meats (Rare)
+    for (int i = 0; i < MAX_MEATS; i++) {
+        meats[i].position = (Vector3){ 
+            (float)GetRandomValue(10, 100), 
+            0.5f, 
+            (float)GetRandomValue(-5, 5) 
+        };
+        meats[i].active = true;
+    }
 }
 
-void UpdateWorld(Bone* bones, Tree* trees, Vector3 playerPos) {
+void UpdateWorld(Bone* bones, Tree* trees, Meat* meats, Vector3 playerPos, int* score, float* health, float maxHealth) {
     // Infinite World Logic (Omnidirectional):
     // If an object gets too far from the player, move it to a new random spot nearby.
     float maxDistance = 50.0f;
@@ -56,15 +66,38 @@ void UpdateWorld(Bone* bones, Tree* trees, Vector3 playerPos) {
             // If close enough, collect it
             if (dx*dx + dz*dz + dy*dy < 2.0f) {
                 bones[i].active = false;
-                // We need to update score in main or pass dog pointer here. 
-                // For simplicity, we handle score increment in main by checking active status change, 
-                // or we can just return a value. Let's keep it visual here.
+                if (score) (*score)++;
+            }
+        }
+    }
+
+    for (int i = 0; i < MAX_MEATS; i++) {
+        if (Vector3Distance(meats[i].position, playerPos) > maxDistance) {
+            float angle = (float)GetRandomValue(0, 360) * DEG2RAD;
+            float dist = (float)GetRandomValue(30, 45);
+            meats[i].position.x = playerPos.x + sinf(angle) * dist;
+            meats[i].position.z = playerPos.z + cosf(angle) * dist;
+            meats[i].active = true;
+        }
+
+        // Collision Detection (Simple AABB)
+        if (meats[i].active) {
+            float dx = playerPos.x - meats[i].position.x;
+            float dz = playerPos.z - meats[i].position.z;
+            float dy = playerPos.y - meats[i].position.y;
+            
+            if (dx*dx + dz*dz + dy*dy < 2.0f) {
+                meats[i].active = false;
+                if (health) {
+                    *health += 30.0f; // Restore health
+                    if (*health > maxHealth) *health = maxHealth;
+                }
             }
         }
     }
 }
 
-void DrawWorld3D(Bone* bones, Tree* trees) {
+void DrawWorld3D(Bone* bones, Tree* trees, Meat* meats) {
     // Draw Ground Plane
     DrawPlane((Vector3){0, 0, 0}, (Vector2){1000.0f, 100.0f}, LIME);
 
@@ -78,6 +111,13 @@ void DrawWorld3D(Bone* bones, Tree* trees) {
     for (int i = 0; i < MAX_BONES; i++) {
         if (bones[i].active) {
             DrawCube(bones[i].position, 0.5f, 0.2f, 0.2f, RAYWHITE);
+        }
+    }
+
+    // Draw Meats
+    for (int i = 0; i < MAX_MEATS; i++) {
+        if (meats[i].active) {
+            DrawCube(meats[i].position, 0.4f, 0.4f, 0.4f, RED); // Meat looks like red cube
         }
     }
 }

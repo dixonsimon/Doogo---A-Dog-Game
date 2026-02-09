@@ -11,6 +11,10 @@ void InitDog(Dog* dog) {
     dog->rotation = 0.0f;
     dog->score = 0;
     dog->color = BROWN;
+    dog->stamina = 100.0f;
+    dog->maxStamina = 100.0f;
+    dog->health = 100.0f;
+    dog->maxHealth = 100.0f;
 }
 
 void UpdateDog(Dog* dog, float deltaTime, float cameraAngle) {
@@ -34,10 +38,26 @@ void UpdateDog(Dog* dog, float deltaTime, float cameraAngle) {
     if (IsKeyDown(KEY_D)) direction = Vector3Add(direction, right);
     if (IsKeyDown(KEY_A)) direction = Vector3Subtract(direction, right);
 
+    float currentSpeed = dog->speed;
+
+    // Sprinting Logic
+    if (IsKeyDown(KEY_LEFT_SHIFT) && dog->stamina > 0) {
+        currentSpeed *= 1.8f; // Sprint multiplier
+        dog->stamina -= 30.0f * deltaTime; // Drain stamina
+        if (dog->stamina < 0) dog->stamina = 0;
+    } else if (dog->stamina < dog->maxStamina && dog->health > 0) {
+        // Refill stamina using health
+        float regen = 15.0f * deltaTime;
+        dog->stamina += regen;
+        dog->health -= regen * 0.2f; // Health cost for stamina regen
+        if (dog->stamina > dog->maxStamina) dog->stamina = dog->maxStamina;
+        if (dog->health < 0) dog->health = 0;
+    }
+
     // Normalize and Apply
     if (Vector3Length(direction) > 0.1f) {
         direction = Vector3Normalize(direction);
-        dog->position = Vector3Add(dog->position, Vector3Scale(direction, dog->speed * deltaTime));
+        dog->position = Vector3Add(dog->position, Vector3Scale(direction, currentSpeed * deltaTime));
     }
 
     // Jump
