@@ -1,6 +1,7 @@
 #include "player.h"
 #include "raymath.h"
 #include "rlgl.h"
+#include "raymath.h"
 #include <math.h>
 
 void InitDog(Dog* dog) {
@@ -83,22 +84,41 @@ void DrawDog3D(Dog dog) {
     rlTranslatef(dog.position.x, dog.position.y, dog.position.z);
     rlRotatef(dog.rotation * RAD2DEG, 0.0f, 1.0f, 0.0f);
 
-    // Draw Body (Local coordinates relative to dog center)
-    DrawCube(Vector3Zero(), 1.0f, 1.0f, 2.0f, dog.color);
-    DrawCubeWires(Vector3Zero(), 1.0f, 1.0f, 2.0f, DARKBROWN);
+    // High Poly Dog Model Construction
+    
+    // Body (Capsule-like using Cylinder + Spheres)
+    Vector3 bodyStart = {0.0f, 0.0f, -0.6f};
+    Vector3 bodyEnd = {0.0f, 0.0f, 0.6f};
+    DrawCylinderEx(bodyStart, bodyEnd, 0.5f, 0.5f, 16, dog.color);
+    DrawSphereEx(bodyStart, 0.5f, 16, 16, dog.color);
+    DrawSphereEx(bodyEnd, 0.5f, 16, 16, dog.color);
 
-    // Draw Head (Offset from center)
-    DrawCube((Vector3){ 0.0f, 0.8f, -0.8f }, 0.8f, 0.8f, 0.8f, dog.color);
+    // Head
+    Vector3 headPos = {0.0f, 0.8f, -0.8f};
+    DrawSphereEx(headPos, 0.45f, 16, 16, dog.color);
+    
+    // Snout
+    Vector3 snoutPos = {0.0f, 0.7f, -1.2f};
+    DrawCylinderEx(headPos, snoutPos, 0.4f, 0.2f, 16, dog.color);
+    DrawSphereEx(snoutPos, 0.2f, 12, 12, BLACK); // Nose
 
     // Draw Ears
-    Vector3 earL = { -0.3f, 1.3f, -0.8f };
-    Vector3 earR = { 0.3f, 1.3f, -0.8f };
-    DrawCube(earL, 0.2f, 0.4f, 0.2f, BLACK);
-    DrawCube(earR, 0.2f, 0.4f, 0.2f, BLACK);
+    Vector3 earLBase = {-0.3f, 1.1f, -0.8f};
+    Vector3 earRBase = {0.3f, 1.1f, -0.8f};
+    DrawCylinderEx(earLBase, (Vector3){-0.4f, 1.4f, -0.8f}, 0.1f, 0.0f, 8, DARKBROWN);
+    DrawCylinderEx(earRBase, (Vector3){0.4f, 1.4f, -0.8f}, 0.1f, 0.0f, 8, DARKBROWN);
+
+    // Legs (4 cylinders)
+    float legRadius = 0.15f;
+    DrawCylinderEx((Vector3){-0.3f, 0.0f, -0.5f}, (Vector3){-0.3f, -0.5f, -0.5f}, legRadius, 0.1f, 12, dog.color);
+    DrawCylinderEx((Vector3){0.3f, 0.0f, -0.5f}, (Vector3){0.3f, -0.5f, -0.5f}, legRadius, 0.1f, 12, dog.color);
+    DrawCylinderEx((Vector3){-0.3f, 0.0f, 0.5f}, (Vector3){-0.3f, -0.5f, 0.5f}, legRadius, 0.1f, 12, dog.color);
+    DrawCylinderEx((Vector3){0.3f, 0.0f, 0.5f}, (Vector3){0.3f, -0.5f, 0.5f}, legRadius, 0.1f, 12, dog.color);
 
     // Draw Tail
-    Vector3 tailPos = { 0.0f, 0.5f, 1.0f };
-    DrawCube(tailPos, 0.2f, 0.2f, 0.5f, BLACK);
+    Vector3 tailStart = {0.0f, 0.2f, 0.9f};
+    Vector3 tailEnd = {0.0f, 0.6f, 1.3f};
+    DrawCylinderEx(tailStart, tailEnd, 0.15f, 0.05f, 12, dog.color);
 
     rlPopMatrix();
 }

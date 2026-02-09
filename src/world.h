@@ -7,6 +7,8 @@
 #define MAX_BONES 20
 #define MAX_TREES 20
 #define MAX_MEATS 5
+#define MAX_CLOUDS 30
+#define MAX_GRASS 1000
 
 typedef struct Bone {
     Vector3 position;
@@ -22,8 +24,26 @@ typedef struct Tree {
     Vector3 position;
 } Tree;
 
-void InitWorld(Bone* bones, Tree* trees, Meat* meats);
-void UpdateWorld(Bone* bones, Tree* trees, Meat* meats, Vector3 playerPos, int* score, float* health, float maxHealth);
-void DrawWorld3D(Bone* bones, Tree* trees, Meat* meats);
+typedef struct Cloud {
+    Vector3 position;
+    float size;
+} Cloud;
+
+typedef struct Grass {
+    Vector3 position;
+    float size;
+} Grass;
+
+typedef struct World {
+    Bone bones[MAX_BONES];
+    Tree trees[MAX_TREES];
+    Meat meats[MAX_MEATS];
+    Cloud clouds[MAX_CLOUDS];
+    Grass grass[MAX_GRASS];
+} World;
+
+void InitWorld(World* world);
+void UpdateWorld(World* world, Vector3* playerPos, int* score, float* health, float maxHealth);
+void DrawWorld3D(World* world);
 
 #endif
